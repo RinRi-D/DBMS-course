@@ -12,3 +12,7 @@ Select instructor.id from instructor Left Join teaches On instructor.id=teaches.
 
 Select instructor.id, instructor.name from instructor Left Join teaches On instructor.id=teaches.id Where teaches.id IS null;
 
+-- Optional
+Select * from takes where grade like 'F%' and (id, course_id) not in (
+    Select id, course_id from takes where grade not like 'F%'
+);
