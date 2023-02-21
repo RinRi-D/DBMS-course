@@ -6,7 +6,7 @@ Select Sum(course.credits) from course Inner Join takes On course.course_id=take
 
 Select student.id, Sum(course.credits) from course Inner Join takes On course.course_id=takes.course_id Inner Join student On takes.id=student.id group by student.id;
 
-Select student.name from student Inner Join takes On student.id=takes.id Inner Join course On course.dept_name='Comp. Sci.' group by student.id;
+Select student.name from student Inner Join takes On student.id=takes.id Inner Join course On course.course_id=takes.course_id and course.dept_name='Comp. Sci.' group by student.id;
 
 Select instructor.id from instructor Left Join teaches On instructor.id=teaches.id Where teaches.id IS null;
 
