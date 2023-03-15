@@ -1,0 +1,86 @@
+# Before indexing
+
+EXPLAIN ANALYZE SELECT * from customer WHERE name='John Smith';
+                                              QUERY PLAN
+------------------------------------------------------------------------------------------------------
+ Seq Scan on customer  (cost=0.00..429.00 rows=3 width=211) (actual time=0.299..3.124 rows=3 loops=1)
+   Filter: (name = 'John Smith'::text)
+   Rows Removed by Filter: 9997
+ Planning Time: 0.129 ms
+ Execution Time: 3.146 ms
+(5 rows)
+
+# After indexing using btree(name):
+
+CREATE INDEX idx_name on customer using btree(name);
+EXPLAIN ANALYZE SELECT * from customer WHERE name='John Smith';
+                                                   QUERY PLAN
+
+-------------------------------------------------------------------------------------------------------
+----------
+ Bitmap Heap Scan on customer  (cost=4.31..15.45 rows=3 width=211) (actual time=0.051..0.056 rows=3 loo
+ps=1)
+   Recheck Cond: (name = 'John Smith'::text)
+   Heap Blocks: exact=3
+   ->  Bitmap Index Scan on idx_name  (cost=0.00..4.31 rows=3 width=0) (actual time=0.044..0.044 rows=3
+ loops=1)
+         Index Cond: (name = 'John Smith'::text)
+ Planning Time: 0.423 ms
+ Execution Time: 0.086 ms
+
+# A complicated query with like doesn't benefit from hash indexing
+
+EXPLAIN ANALYZE SELECT * FROM customer WHERE address LIKE '%Warren%Port%';
+                                              QUERY PLAN
+------------------------------------------------------------------------------------------------------
+ Seq Scan on customer  (cost=0.00..429.00 rows=1 width=211) (actual time=3.544..4.110 rows=1 loops=1)
+   Filter: (address ~~ '%Warren%Port%'::text)
+   Rows Removed by Filter: 9999
+ Planning Time: 0.125 ms
+ Execution Time: 4.131 ms
+(5 rows)
+
+The query can be improved and benefit from the btree indexing:
+EXPLAIN ANALYZE SELECT * FROM customer WHERE name >= 'Lisa' and name <= 'Lisb';
+                                                    QUERY PLAN
+
+-------------------------------------------------------------------------------------------------------
+------------
+ Bitmap Heap Scan on customer  (cost=4.41..45.44 rows=12 width=211) (actual time=0.068..0.202 rows=90 l
+oops=1)
+   Recheck Cond: ((name >= 'Lisa'::text) AND (name <= 'Lisb'::text))
+   Heap Blocks: exact=83
+   ->  Bitmap Index Scan on idx_name  (cost=0.00..4.41 rows=12 width=0) (actual time=0.042..0.042 rows=
+90 loops=1)
+         Index Cond: ((name >= 'Lisa'::text) AND (name <= 'Lisb'::text))
+ Planning Time: 0.174 ms
+ Execution Time: 0.233 ms
+
+Before indexing address:
+
+EXPLAIN ANALYZE SELECT * FROM customer WHERE address='USS Oneill FPO AE 11865';
+
+                                              QUERY PLAN
+------------------------------------------------------------------------------------------------------
+ Seq Scan on customer  (cost=0.00..429.00 rows=1 width=211) (actual time=2.639..2.639 rows=0 loops=1)
+   Filter: (address = 'USS Oneill FPO AE 11865'::text)
+   Rows Removed by Filter: 10000
+ Planning Time: 0.084 ms
+ Execution Time: 2.657 ms
+(5 rows)
+
+After indexing address:
+CREATE INDEX idx_address on customer using HASH(address);
+EXPLAIN ANALYZE SELECT * FROM customer WHERE address='USS Oneill FPO AE 11865';
+                                                       QUERY PLAN
+
+-------------------------------------------------------------------------------------------------------
+-----------------
+ Index Scan using idx_address on customer  (cost=0.00..8.02 rows=1 width=211) (actual time=0.016..0.016
+ rows=0 loops=1)
+   Index Cond: (address = 'USS Oneill FPO AE 11865'::text)
+ Planning Time: 0.224 ms
+ Execution Time: 0.035 ms
+(4 rows)
+
+

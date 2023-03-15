@@ -1,6 +1,9 @@
 #+title: Lab 6 Amirlan Sharipov (BS-CS21-01)
 #+author: Amirlan Sharipov (BS-CS21-01)
 
+* Disclaimer
+Please, use the lab6.sql file to read/copy the source code. Also, the html version of this document looks better than the pdf one.
+
 * Exercise 1
 ** Table creation and insertion
 I used the schema provided in the slides. And then manually inserted data into the tables.
