@@ -1,0 +1,61 @@
+CREATE	(a:Fighter{name:'Khabib Nurmagomedov', weight:'155'}),
+		(b:Fighter{name:'Rafael Dos Anjos', weight:'155'}),
+		(c:Fighter{name:'Neil Magny', weight:'170'}),
+		(d:Fighter{name:'Jon Jones', weight:'205'}),
+		(e:Fighter{name:'Daniel Cormier', weight:'205'}),
+		(f:Fighter{name:'Michael Bisping', weight:'185'}),
+		(g:Fighter{name:'Matt Hamill', weight:'185'}),
+		(h:Fighter{name:'Brandon Vera', weight:'205'}),
+		(i:Fighter{name:'Frank Mir', weight:'230'}),
+		(j:Fighter{name:'Brock Lesnar', weight:'230'}),
+		(k:Fighter{name:'Kelvin Gastelum', weight:'185'}),
+		(a)-[:beats]->(b),
+		(b)-[:beats]->(c),
+		(d)-[:beats]->(e),
+		(f)-[:beats]->(g),
+		(d)-[:beats]->(h),
+		(h)-[:beats]->(i),
+		(i)-[:beats]->(j),
+		(c)-[:beats]->(k),
+		(k)-[:beats]->(f),
+		(k)-[:beats]->(f),
+		(f)-[:beats]->(g),
+		(f)-[:beats]->(k),
+		(g)-[:beats]->(d)
+
+# visualize
+MATCH (a: Fighter)-[r]-(b) RETURN r, a, b;
+
+# middle/welter/light
+MATCH (a: Fighter)-[:beats]->()
+WHERE a.weight = '155' OR a.weight = '170' OR a.weight = '185'
+RETURN a.weight, collect(DISTINCT a.name)
+
+# 1-1
+MATCH (a: Fighter)-[r1:beats]->(b: Fighter)-[r2:beats]->(c: Fighter)
+WITH a, b, c, count(*) AS cnt
+WHERE a = c AND cnt = 1
+RETURN a, b;
+
+# gretest number of fights
+MATCH (a: Fighter)-[r:beats]->()
+WITH a.name as name, count(a.name) as cnt
+CALL {
+    MATCH (a: Fighter)-[r:beats]->()
+    WITH a.name as name, count(a.name) as cnt
+    RETURN max(cnt) as mx
+}
+WITH name, cnt, mx
+WHERE cnt = mx
+RETURN name
+
+# Undefeated
+MATCH (a: Fighter)
+WHERE NOT EXISTS (()-[:beats]->(a))
+RETURN a
+
+# defeated
+MATCH (a: Fighter)
+WHERE NOT EXISTS ((a)-[:beats]->())
+RETURN a
+
